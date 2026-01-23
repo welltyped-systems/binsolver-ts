@@ -1,0 +1,47 @@
+{
+  "name": "binsolver",
+  "version": "1.0.0",
+  "description": "Official TypeScript/JavaScript SDK for the BinSolver API - 3D Bin Packing Optimization.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "prepublishOnly": "bun run build",
+    "test": "bun test",
+    "generate": "openapi-typescript openapi.yaml -o src/schema.ts"
+  },
+  "keywords": [
+    "bin packing",
+    "3d packing",
+    "logistics",
+    "optimization",
+    "api",
+    "sdk",
+    "typescript"
+  ],
+  "author": "BinSolver",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "openapi-typescript": "^7.10.1",
+    "tsup": "^8.5.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.15.0"
+  }
+}
