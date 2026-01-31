@@ -168,6 +168,36 @@ paths:
                       d: 2
                       allowHazmat: true
                       quantity: 1
+              nesting:
+                summary: Nesting items inside containers
+                value:
+                  allowUnplaced: true
+                  objective: minBins
+                  nestingStrategy: auto
+                  items:
+                    - id: organizer
+                      w: 4
+                      h: 4
+                      d: 4
+                      weight: 0.8
+                      packaging:
+                        nesting:
+                          innerW: 3
+                          innerH: 3
+                          innerD: 3
+                          padding:
+                            all: 0.1
+                    - id: widget
+                      w: 1
+                      h: 1
+                      d: 1
+                      quantity: 3
+                  bins:
+                    - id: shipping-box
+                      w: 6
+                      h: 6
+                      d: 6
+                      quantity: 1
               shippingObjective:
                 summary: Shipping-aware optimization
                 value:
@@ -1109,6 +1139,10 @@ components:
           type: string
           enum: [none, zpl]
           description: If 'zpl', generates a ZPL label string for each bin. (Paid plan only) Defaults to 'none'.
+        nestingStrategy:
+          type: string
+          enum: [auto, maximize, none]
+          description: Controls pre-pack nesting. auto uses the main objective to decide nesting; maximize fills cavities first; none disables nesting. Defaults to 'auto'.
     ItemInput:
       type: object
       required: [w, h, d]
@@ -1323,6 +1357,46 @@ components:
           type: string
           enum: [xyz, xzy, yxz, yzx, zxy, zyx]
           description: Applied rotation permutation.
+        nested:
+          type: array
+          description: Items packed inside this item (if nesting was used). Coordinates are relative to the item's local origin.
+          items:
+            $ref: "#/components/schemas/NestedPlacement"
+    NestedPlacement:
+      type: object
+      required: [itemId, x, y, z, w, h, d, rotation]
+      properties:
+        itemId:
+          type: string
+          description: Item identifier for this placement.
+        x:
+          type: number
+          format: double
+          description: X coordinate of the placement origin (relative to container).
+        y:
+          type: number
+          format: double
+          description: Y coordinate of the placement origin (relative to container).
+        z:
+          type: number
+          format: double
+          description: Z coordinate of the placement origin (relative to container).
+        w:
+          type: number
+          format: double
+          description: Packed width (includes item padding if provided).
+        h:
+          type: number
+          format: double
+          description: Packed height (includes item padding if provided).
+        d:
+          type: number
+          format: double
+          description: Packed depth (includes item padding if provided).
+        rotation:
+          type: string
+          enum: [xyz, xzy, yxz, yzx, zxy, zyx]
+          description: Applied rotation permutation.
     UnplacedItem:
       type: object
       required: [itemId, w, h, d, reason]
@@ -1468,9 +1542,54 @@ components:
         fragile:
           type: boolean
           description: Marks item as fragile; prevents stacking weight above.
+        nestable:
+          type: boolean
+          description: When false, this item cannot be nested inside other items. Defaults to true.
+        nesting:
+          $ref: "#/components/schemas/NestingRulesInput"
+          description: Defines an internal cavity so other items may be packed inside this item.
         padding:
           $ref: "#/components/schemas/PaddingInput"
           description: Clearance added around the item dimensions.
+    NestingRulesInput:
+      type: object
+      required: [innerW, innerH, innerD]
+      description: Internal cavity definition for nesting.
+      properties:
+        innerW:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          description: Inner cavity width (X axis).
+        innerH:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          description: Inner cavity height (Y axis).
+        innerD:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          description: Inner cavity depth (Z axis).
+        padding:
+          $ref: "#/components/schemas/PaddingInput"
+          description: Clearance between nested items and cavity walls.
+        maxWeight:
+          type: number
+          format: double
+          minimum: 0
+          description: Maximum total weight allowed inside this cavity.
+        allowHazmat:
+          type: boolean
+          description: If false, hazmat items cannot be nested inside this cavity. Defaults to true.
+        allowedGroups:
+          type: array
+          description: If set, only items whose packaging.group is in this list may be nested.
+          items:
+            type: string
     GroupMode:
       type: string
       enum: [keepTogether, separate]
@@ -1565,6 +1684,9 @@ components:
         unplaced:
           type: integer
           description: Number of items not placed.
+        nested:
+          type: integer
+          description: Number of items nested inside other items.
         binsUsed:
           type: integer
           description: Number of bins used.

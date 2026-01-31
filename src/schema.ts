@@ -313,6 +313,11 @@ export interface components {
              * @enum {string}
              */
             labelFormat?: "none" | "zpl";
+            /**
+             * @description Controls pre-pack nesting. auto uses the main objective to decide nesting; maximize fills cavities first; none disables nesting. Defaults to 'auto'.
+             * @enum {string}
+             */
+            nestingStrategy?: "auto" | "maximize" | "none";
         };
         ItemInput: {
             /** @description Optional item identifier. If omitted, the API assigns one. */
@@ -485,6 +490,47 @@ export interface components {
              * @enum {string}
              */
             rotation: "xyz" | "xzy" | "yxz" | "yzx" | "zxy" | "zyx";
+            /** @description Items packed inside this item (if nesting was used). Coordinates are relative to the item's local origin. */
+            nested?: components["schemas"]["NestedPlacement"][];
+        };
+        NestedPlacement: {
+            /** @description Item identifier for this placement. */
+            itemId: string;
+            /**
+             * Format: double
+             * @description X coordinate of the placement origin (relative to container).
+             */
+            x: number;
+            /**
+             * Format: double
+             * @description Y coordinate of the placement origin (relative to container).
+             */
+            y: number;
+            /**
+             * Format: double
+             * @description Z coordinate of the placement origin (relative to container).
+             */
+            z: number;
+            /**
+             * Format: double
+             * @description Packed width (includes item padding if provided).
+             */
+            w: number;
+            /**
+             * Format: double
+             * @description Packed height (includes item padding if provided).
+             */
+            h: number;
+            /**
+             * Format: double
+             * @description Packed depth (includes item padding if provided).
+             */
+            d: number;
+            /**
+             * @description Applied rotation permutation.
+             * @enum {string}
+             */
+            rotation: "xyz" | "xzy" | "yxz" | "yzx" | "zxy" | "zyx";
         };
         UnplacedItem: {
             /** @description Item identifier. */
@@ -611,8 +657,41 @@ export interface components {
             hazmat?: boolean;
             /** @description Marks item as fragile; prevents stacking weight above. */
             fragile?: boolean;
+            /** @description When false, this item cannot be nested inside other items. Defaults to true. */
+            nestable?: boolean;
+            /** @description Defines an internal cavity so other items may be packed inside this item. */
+            nesting?: components["schemas"]["NestingRulesInput"];
             /** @description Clearance added around the item dimensions. */
             padding?: components["schemas"]["PaddingInput"];
+        };
+        /** @description Internal cavity definition for nesting. */
+        NestingRulesInput: {
+            /**
+             * Format: double
+             * @description Inner cavity width (X axis).
+             */
+            innerW: number;
+            /**
+             * Format: double
+             * @description Inner cavity height (Y axis).
+             */
+            innerH: number;
+            /**
+             * Format: double
+             * @description Inner cavity depth (Z axis).
+             */
+            innerD: number;
+            /** @description Clearance between nested items and cavity walls. */
+            padding?: components["schemas"]["PaddingInput"];
+            /**
+             * Format: double
+             * @description Maximum total weight allowed inside this cavity.
+             */
+            maxWeight?: number;
+            /** @description If false, hazmat items cannot be nested inside this cavity. Defaults to true. */
+            allowHazmat?: boolean;
+            /** @description If set, only items whose packaging.group is in this list may be nested. */
+            allowedGroups?: string[];
         };
         /**
          * @description Grouping mode for items sharing the same group id. groupMode without group is invalid.
@@ -707,6 +786,8 @@ export interface components {
             placed: number;
             /** @description Number of items not placed. */
             unplaced: number;
+            /** @description Number of items nested inside other items. */
+            nested?: number;
             /** @description Number of bins used. */
             binsUsed: number;
             /** @description Number of pallets used (if palletization enabled). */
