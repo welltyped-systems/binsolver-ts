@@ -1242,13 +1242,16 @@ components:
         palletization:
           $ref: "#/components/schemas/PalletizationInput"
           description: Two-stage packing (items->pallets->containers). Returns pallet results and split assignments. (Paid plan only)
+          x-pro-only: true
         includeInstructions:
           type: boolean
           description: If true, returns step-by-step packing instructions for each bin. (Paid plan only) Defaults to false.
+          x-pro-only: true
         labelFormat:
           type: string
           enum: [none, zpl]
           description: If 'zpl', generates a ZPL label string for each bin. (Paid plan only) Defaults to 'none'.
+          x-pro-only: true
         nestingStrategy:
           type: string
           enum: [auto, maximize, none]
